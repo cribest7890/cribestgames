@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta property="og:image" content="https://raw.githubusercontent.com/cribest7890/ball-clicker/refs/heads/main/assets/logo.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ball Clicker</title>
+  <style>
+    body {
+      background-color: black;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .pallina {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: red;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.3s ease;
+    }
+
+    .contatore, .monete, .absreset {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      color: white;
+    }
+
+    .contatore {
+      bottom: 200px;
+    }
+
+    .monete {
+      bottom: 170px;
+      color: #ff1d8d;
+    }
+
+    .absreset {
+      bottom: 140px;
+      color: gold;
+      opacity: 0;
+      transition: all 0.5s ease;
+    } 
+   
+    .license {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      bottom:10px;
+      color: #d3d3d3;
+    }
+      
+    
+  </style>
+</head>
+<body>
+
+  <img id="shopButton" src="https://raw.githubusercontent.com/cribest7890/ball-clicker/refs/heads/main/assets/shop_icon.png" alt="shop" style="position: absolute; top: 50px; right: 35px; width: 80px; height: auto; z-index: 10; cursor: pointer;">
+  <div class="pallina"></div>
+  <div class="contatore">clicks: 0</div>
+  <div class="monete">resets: 0</div>
+  <div class="absreset">absolute resets: 0</div>
+  <div class="license">Copyright © 2025 cribest7890</div>
+  <div class="shopinfo" style="position: absolute; top: 135px; right: 15px; font-size: 10px; color: white;">5 absolute reset = +0.1x click</div>
+  <div id="ad-container" style="text-align: center; bottom: 30px;">
+  <script>
+    atOptions = {
+      'key' : 'a4ca3d747698d83dad17e8b4a256cbb0',
+      'format' : 'iframe',
+      'height' : 50,
+      'width' : 320,
+      'params' : {}
+    };
+  </script>
+  <script src="https://www.highperformanceformat.com/a4ca3d747698d83dad17e8b4a256cbb0/invoke.js"></script>
+</div>
+
+
+  
+  <script>
+    window.onload = function() {
+      const pallina = document.querySelector('.pallina');
+      const contatore = document.querySelector('.contatore');
+      const monete = document.querySelector('.monete');
+      const absreset = document.querySelector('.absreset');
+      const license = document.querySelector('.license')
+
+      let clickCount = parseInt(localStorage.getItem('clickCount')) || 0;
+      let coinCount = parseInt(localStorage.getItem('coinCount')) || 0;
+      let absresetCount = parseInt(localStorage.getItem('absresetCount')) || 0;
+      let pallinaSize = parseFloat(localStorage.getItem('pallinaSize')) || 50;
+      let clickMultiplier = parseFloat(localStorage.getItem('clickMultiplier')) || 1;
+      const maxSize = Math.min(window.innerWidth, window.innerHeight);
+
+      // Aggiorna i contatori iniziali
+      contatore.innerText = "click: " + clickCount.toFixed(1);
+      monete.innerText = "resets: " + coinCount;
+      absreset.innerText = "absolute resets: " + absresetCount;
+      if (absresetCount > 0) {
+        absreset.style.opacity = 1;
+        pallina.style.width = pallinaSize + "px";
+        pallina.style.height = pallinaSize + "px";
+      }
+
+      function handleEvent(e) {
+        // Incrementa click solo al clic k
+        clickCount += 1 * clickMultiplier;
+
+        // Cambia colore casuale
+        const colore = "#" + Math.floor(Math.random() * 16777215).toString(16);
+        pallina.style.backgroundColor = colore;
+
+        // Aumenta dimensione pallina
+        pallinaSize *= 1.1 + coinCount * 0.01;
+        pallina.style.width = pallinaSize + "px";
+        pallina.style.height = pallinaSize + "px";
+
+        // Reset dimensione se supera max
+        if (pallinaSize >= maxSize) {
+          pallinaSize = 50 * 1.01;
+          pallina.style.width = pallinaSize + "px";
+          pallina.style.height = pallinaSize + "px";
+          coinCount++;
+        }
+
+        // Gestione absolute reset
+        if (coinCount >= 700) {
+          absresetCount++;
+          coinCount -= 700;
+          absreset.style.opacity = 1;
+        }
+
+        // Aggiorna contatori visibili
+        contatore.innerText = "click: " + clickCount.toFixed(1);
+        monete.innerText = "resets: " + coinCount;
+        absreset.innerText = "absolute resets: " + absresetCount;
+
+        const shopButton = document.getElementById("shopButton");
+
+        
+        
+        // Salva nello storage
+        localStorage.setItem('clickCount', clickCount);
+        localStorage.setItem('coinCount', coinCount);
+        localStorage.setItem('absresetCount', absresetCount);
+        localStorage.setItem('pallinaSize', pallinaSize);
+        
+      }
+
+      shopButton.addEventListener("click", function (e) {
+          e.stopPropagation(); // evita che conti come click normale
+
+          if (absresetCount >= 5) {
+            absresetCount -= 5;
+            clickMultiplier += 0.1;
+            localStorage.setItem('clickMultiplier', clickMultiplier);
+    // QUI puoi mettere l'effetto dello shop
+    // esempio: bonus ai click
+    // clickMultiplier += 0.1;
+
+            absreset.innerText = "absolute resets: " + absresetCount;
+            localStorage.setItem('absresetCount', absresetCount);
+        } else {
+            alert("Non hai abbastanza absolute resets!");
+        }
+});
+      // Unico listener per click e tasti
+      document.addEventListener("click", handleEvent);
+      document.addEventListener("keyup", function(e) {
+        if (e.code === "Space") {
+          handleEvent(e);
+      } else {
+          e.preventDefault(); // blocca altri tasti
+      }
+    });
+    }
+  </script>
+
+</body>
+</html>
