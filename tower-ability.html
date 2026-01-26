@@ -30,13 +30,9 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-let blocks = [];
-let speed = 3;
-let score = 0;
-let gameOver = false;
+let blocks, currentBlock, speed, score, gameOver;
 
 const MAX_BLOCKS = 4;
-const FLOOR_Y = () => canvas.height;
 
 function rand(min, max) {
     return min + Math.random() * (max - min);
@@ -46,32 +42,51 @@ function randomColor() {
     return `hsl(${Math.random() * 360}, 70%, 60%)`;
 }
 
+function spawnY() {
+    if (blocks.length === 0) {
+        return canvas.height - canvas.height * 0.15;
+    }
+    return blocks[blocks.length - 1].y - canvas.height * 0.12;
+}
+
 function newBlock() {
-    const w = rand(canvas.width * 0.15, canvas.width * 0.35);
-    const h = rand(canvas.height * 0.035, canvas.height * 0.06);
+    const w = rand(canvas.width * 0.18, canvas.width * 0.35);
+    const h = rand(canvas.height * 0.04, canvas.height * 0.06);
 
     return {
         width: w,
         height: h,
         x: rand(0, canvas.width - w),
-        y: 0,
+        y: spawnY(),
         dir: Math.random() > 0.5 ? 1 : -1,
         color: randomColor(),
         falling: false
     };
 }
 
-let currentBlock = newBlock();
+function resetGame() {
+    blocks = [];
+    speed = 3;
+    score = 0;
+    gameOver = false;
+    currentBlock = newBlock();
+}
+
+resetGame();
 
 function dropBlock() {
-    if (!gameOver && !currentBlock.falling) {
+    if (gameOver) {
+        resetGame();
+        return;
+    }
+    if (!currentBlock.falling) {
         currentBlock.falling = true;
     }
 }
 
 function nextBlock() {
     score++;
-    speed += 0.5;
+    speed += 0.45;
 
     if (blocks.length > MAX_BLOCKS) {
         const removed = blocks.shift();
@@ -91,13 +106,13 @@ function update() {
             currentBlock.dir *= -1;
         }
     } else {
-        currentBlock.y += canvas.height * 0.03;
+        currentBlock.y += canvas.height * 0.035;
 
         const last = blocks[blocks.length - 1];
 
         if (!last) {
-            if (currentBlock.y + currentBlock.height >= FLOOR_Y()) {
-                currentBlock.y = FLOOR_Y() - currentBlock.height;
+            if (currentBlock.y + currentBlock.height >= canvas.height) {
+                currentBlock.y = canvas.height - currentBlock.height;
                 blocks.push(currentBlock);
                 nextBlock();
             }
@@ -140,8 +155,11 @@ function draw() {
         ctx.fillStyle = "red";
         ctx.font = "48px sans-serif";
         ctx.fillText("GAME OVER", canvas.width / 2 - 150, canvas.height / 2);
-        ctx.font = "20px sans-serif";
-        ctx.fillText("Premi F5 per riprovare", canvas.width / 2 - 110, canvas.height / 2 + 40);
+        ctx.font = "22px sans-serif";
+        ctx.fillText("Tap o premi SPAZIO per riprovare",
+            canvas.width / 2 - 170,
+            canvas.height / 2 + 45
+        );
     }
 }
 
