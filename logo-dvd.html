@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DVD Logo HD</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #222;
+    cursor: none;
+  }
+  canvas {
+    display: block;
+    background-color: #111;
+  }
+</style>
+</head>
+
+<body>
+<canvas id="canvas"></canvas>
+
+<script>
+/* ==========================
+   📌 PARAMETRI URL (AUTO)
+   ========================== */
+document.addEventListener("mousedown", () => {
+  document.documentElement.requestFullscreen();
+}, { once: true }); 
+
+const params = new URLSearchParams(window.location.search);
+let changed = false;
+
+let dim = parseInt(params.get("dim"));
+let vel = parseInt(params.get("vel"));
+
+if (isNaN(dim)) {
+  dim = 150;
+  params.set("dim", dim);
+  changed = true;
+}
+
+if (isNaN(vel)) {
+  vel = 3;
+  params.set("vel", vel);
+  changed = true;
+}
+
+if (changed) {
+  history.replaceState(
+    null,
+    "",
+    window.location.pathname + "?" + params.toString()
+  );
+}
+
+// limiti di sicurezza
+dim = Math.min(Math.max(dim, 50), 400);
+vel = Math.min(Math.max(vel, 1), 20);
+
+/* ==========================
+   🎨 CANVAS
+   ========================== */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const dpr = window.devicePixelRatio || 1;
+
+function resizeCanvas() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+}
+
+resizeCanvas();
+
+/* ==========================
+   🖼️ LOGO
+   ========================== */
+const dvdLogo = new Image();
+dvdLogo.src = "./assets/DVD_logo.svg";
+
+function randomColor() {
+  return `rgb(
+    ${Math.floor(Math.random() * 256)},
+    ${Math.floor(Math.random() * 256)},
+    ${Math.floor(Math.random() * 256)}
+  )`;
+}
+
+const logo = {
+  x: Math.random() * 200,
+  y: Math.random() * 150,
+  width: dim,
+  height: dim / 2,
+  vx: Math.random() < 0.5 ? vel : -vel,
+  vy: Math.random() < 0.5 ? vel : -vel,
+  color: randomColor()
+};
+
+/* ==========================
+   ⚡ OFFSCREEN CANVAS
+   ========================== */
+const offCanvas = document.createElement("canvas");
+offCanvas.width = logo.width * dpr;
+offCanvas.height = logo.height * dpr;
+
+const offCtx = offCanvas.getContext("2d");
+offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+offCtx.imageSmoothingEnabled = true;
+offCtx.imageSmoothingQuality = "high";
+
+dvdLogo.onload = () => animate();
+
+function drawColoredLogo() {
+  offCtx.clearRect(0, 0, logo.width, logo.height);
+  offCtx.drawImage(dvdLogo, 0, 0, logo.width, logo.height);
+  offCtx.globalCompositeOperation = "source-in";
+  offCtx.fillStyle = logo.color;
+  offCtx.fillRect(0, 0, logo.width, logo.height);
+  offCtx.globalCompositeOperation = "source-over";
+}
+
+/* ==========================
+   🎞️ ANIMAZIONE
+   ========================== */
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  logo.x += logo.vx;
+  logo.y += logo.vy;
+
+  let bounced = false;
+
+  if (logo.x <= 0 || logo.x + logo.width >= window.innerWidth) {
+    logo.vx *= -1;
+    bounced = true;
+  }
+
+  if (logo.y <= 0 || logo.y + logo.height >= window.innerHeight) {
+    logo.vy *= -1;
+    bounced = true;
+  }
+
+  if (bounced) {
+    logo.color = randomColor();
+  }
+
+  drawColoredLogo();
+  ctx.drawImage(offCanvas, logo.x, logo.y, logo.width, logo.height);
+
+  requestAnimationFrame(animate);
+}
+
+window.addEventListener("resize", resizeCanvas);
+</script>
+</body>
+</html>
