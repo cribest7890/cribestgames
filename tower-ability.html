@@ -1,1 +1,140 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Tower Ability</title>
+<style>
+    body {
+        margin: 0;
+        background: #111;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: sans-serif;
+        color: white;
+    }
+    canvas {
+        background: #222;
+        border: 2px solid #555;
+    }
+</style>
+</head>
+<body>
 
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let blocks = [];
+let speed = 2;
+let gameOver = false;
+let score = 0;
+
+function randomColor() {
+    return `hsl(${Math.random() * 360}, 70%, 60%)`;
+}
+
+function newBlock() {
+    const width = 50 + Math.random() * 80;
+    const height = 20 + Math.random() * 30;
+
+    return {
+        x: 0,
+        y: 50,
+        width,
+        height,
+        color: randomColor(),
+        dir: 1,
+        falling: false
+    };
+}
+
+let currentBlock = newBlock();
+
+function update() {
+    if (gameOver) return;
+
+    if (!currentBlock.falling) {
+        currentBlock.x += speed * currentBlock.dir;
+        if (currentBlock.x <= 0 || currentBlock.x + currentBlock.width >= canvas.width) {
+            currentBlock.dir *= -1;
+        }
+    } else {
+        currentBlock.y += 15; // caduta veloce
+
+        const last = blocks[blocks.length - 1];
+
+        if (!last) {
+            if (currentBlock.y + currentBlock.height >= canvas.height - 20) {
+                currentBlock.y = canvas.height - 20 - currentBlock.height;
+                blocks.push(currentBlock);
+                nextBlock();
+            }
+        } else {
+            if (currentBlock.y + currentBlock.height >= last.y) {
+                if (
+                    currentBlock.x + currentBlock.width > last.x &&
+                    currentBlock.x < last.x + last.width
+                ) {
+                    currentBlock.y = last.y - currentBlock.height;
+                    blocks.push(currentBlock);
+                    nextBlock();
+                } else {
+                    gameOver = true;
+                }
+            }
+        }
+    }
+}
+
+function nextBlock() {
+    score++;
+    speed += 0.4;
+    currentBlock = newBlock();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    blocks.forEach(b => {
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+    });
+
+    if (!gameOver) {
+        ctx.fillStyle = currentBlock.color;
+        ctx.fillRect(currentBlock.x, currentBlock.y, currentBlock.width, currentBlock.height);
+    }
+
+    ctx.fillStyle = "white";
+    ctx.fillText("Score: " + score, 10, 20);
+
+    if (gameOver) {
+        ctx.fillStyle = "red";
+        ctx.font = "30px sans-serif";
+        ctx.fillText("GAME OVER", 100, 300);
+        ctx.font = "16px sans-serif";
+        ctx.fillText("Ricarica per riprovare", 115, 330);
+    }
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+canvas.addEventListener("click", () => {
+    if (!currentBlock.falling && !gameOver) {
+        currentBlock.falling = true;
+    }
+});
+
+loop();
+</script>
+
+</body>
+</html>
