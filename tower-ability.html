@@ -128,7 +128,7 @@ function dropBlock() {
 
 function nextBlock() {
     score++;
-    speed += 0.6;
+    speed += 0.6 - window.innerWidth / 1000;
     
     widthMultiplier *= 0.99; 
 
