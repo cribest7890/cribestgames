@@ -1,27 +1,38 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<title>Tower Ability</title>
-<style>
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: #111;
-}
-canvas {
-    display: block;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Ability - Hard Mode</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #111;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .record {
+            color: #C29B0C;
+            position: absolute;
+            top: 10px;
+            left: 120px;
+            font-size: 20px;
+        }
+    </style>
 </head>
 <body>
 
 <canvas id="game"></canvas>
+<div id="highScore" class="record">record: 0</div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const recordElement = document.getElementById("highScore");
 
 function resize() {
     canvas.width = window.innerWidth;
@@ -31,7 +42,7 @@ window.addEventListener("resize", resize);
 resize();
 
 /* ====== CONFIG ====== */
-const MAX_BLOCKS = 4;
+const MAX_BLOCKS = 7;
 let TOP_MARGIN;
 let SPAWN_OFFSET;
 
@@ -40,7 +51,11 @@ let blocks = [];
 let currentBlock;
 let speed = 3;
 let score = 0;
+let widthMultiplier = 1.0; // Inizia al 100% della larghezza
+let worldRecord = localStorage.getItem("towerRecord") || 0;
 let gameOver = false;
+
+recordElement.innerText = "record: " + worldRecord;
 
 /* ====== UTILS ====== */
 function rand(min, max) {
@@ -52,8 +67,8 @@ function randomColor() {
 
 /* ====== SPAWN LOGIC ====== */
 function updateSpawnValues() {
-    TOP_MARGIN = canvas.height * 0.08;     // aria sopra
-    SPAWN_OFFSET = canvas.height * 0.12;   // distanza dalla torre
+    TOP_MARGIN = canvas.height * 0.08;
+    SPAWN_OFFSET = canvas.height * 0.12;
 }
 
 updateSpawnValues();
@@ -70,11 +85,15 @@ function spawnY() {
 
 /* ====== BLOCK ====== */
 function newBlock() {
-    const w = rand(canvas.width * 0.18, canvas.width * 0.35);
+    // La larghezza ora tiene conto del moltiplicatore che diminuisce
+    const baseMinW = canvas.width * 0.15;
+    const baseMaxW = canvas.width * 0.35;
+    
+    const w = rand(baseMinW, baseMaxW) * widthMultiplier;
     const h = rand(canvas.height * 0.04, canvas.height * 0.06);
 
     return {
-        width: w,
+        width: Math.max(w, 20), // Non scende mai sotto i 20 pixel (altrimenti è impossibile!)
         height: h,
         x: rand(0, canvas.width - w),
         y: spawnY(),
@@ -89,6 +108,7 @@ function resetGame() {
     blocks = [];
     speed = 3;
     score = 0;
+    widthMultiplier = 1.0; // Reset della difficoltà larghezza
     gameOver = false;
     updateSpawnValues();
     currentBlock = newBlock();
@@ -108,7 +128,15 @@ function dropBlock() {
 
 function nextBlock() {
     score++;
-    speed += 1.0;
+    speed += 0.6;
+    
+    widthMultiplier *= 0.99; 
+
+    if (score > worldRecord) {
+        worldRecord = score;
+        localStorage.setItem("towerRecord", worldRecord);
+        recordElement.innerText = "record: " + worldRecord;
+    }
 
     if (blocks.length > MAX_BLOCKS) {
         const removed = blocks.shift();
@@ -175,14 +203,17 @@ function draw() {
     ctx.fillText("Score: " + score, 20, 30);
 
     if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+        
         ctx.fillStyle = "red";
-        ctx.font = "48px sans-serif";
-        ctx.fillText("GAME OVER", canvas.width / 2 - 150, canvas.height / 2);
+        ctx.textAlign = "center";
+        ctx.font = "bold 48px sans-serif";
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+        ctx.fillStyle = "white";
         ctx.font = "22px sans-serif";
-        ctx.fillText("Tap o SPAZIO per riprovare",
-            canvas.width / 2 - 150,
-            canvas.height / 2 + 45
-        );
+        ctx.fillText("Clicca o SPAZIO per riprovare", canvas.width / 2, canvas.height / 2 + 50);
+        ctx.textAlign = "left"; 
     }
 }
 
@@ -194,7 +225,10 @@ function loop() {
 }
 
 /* ====== INPUT ====== */
-canvas.addEventListener("click", dropBlock);
+canvas.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    dropBlock();
+});
 window.addEventListener("keydown", e => {
     if (e.code === "Space") {
         e.preventDefault();
