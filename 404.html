@@ -1,26 +1,58 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video 404 - Clicca per tornare alla Home</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+        }
+
+        /* Il video riempie lo sfondo */
+        .video-background {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: 1;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+        }
+
+        /* Il link invisibile sopra al video */
+        .full-screen-link {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10; /* Deve stare sopra al video */
+            cursor: pointer;
+            display: block;
+        }
+
+        /* Opzionale: un piccolo suggerimento visivo al passaggio del mouse */
+        .full-screen-link:hover {
+            background: rgba(255, 255, 255, 0.05); /* Leggero chiarore al passaggio */
+        }
+    </style>
 </head>
 <body>
-    <h1>404 Not Found</h1>
-  <script>
-  </script>
+
+    <a href="index.html" class="full-screen-link" title="Torna alla Home"></a>
+
+    <video autoplay muted loop playsinline class="video-background">
+        <source src="./assets/404.mp4" type="video/mp4">
+    </video>
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
