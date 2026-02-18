@@ -12,19 +12,19 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000000;
+            background-color: #000000; /* Lo sfondo nero riempirà le parti vuote */
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
         .video-background {
-            width: 100%;            
-            max-width: 480px;       
-            height: 100vh;         
-            object-fit: cover;    
+            width: 100%;
+            max-width: 480px;      /* Non supera i 480px */
+            height: auto;          /* L'altezza si adatta per non deformare/zoomare */
+            max-height: 100vh;     /* Evita che esca dai bordi in verticale */
+            object-fit: contain;   /* Mostra l'intera immagine senza tagli */
             z-index: 1;
-            display: block;
         }
 
         .full-screen-link {
@@ -34,8 +34,7 @@
             width: 100%;
             height: 100%;
             z-index: 10;
-            cursor: default;
-            display: block;
+            cursor: pointer;
         }
     </style>
 </head>
