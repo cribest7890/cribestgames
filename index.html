@@ -1,40 +1,61 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cribest Games</title>
   <style>
     body {
       background-color: rgb(54, 18, 18);
       margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
-      font-family: sans-serif;
+      display: flex;
+      justify-content: center; /* Centra il gruppo di giochi nella pagina */
+      align-items: flex-start;
+      padding-top: 50px;
     }
 
-    .game-item {
-      position: absolute;
-      top: 50px;
+    /* Contenitore principale per tutti i giochi */
+    .games-container {
       display: flex;
-      flex-direction: column; 
-      align-items: center;  
-      width: 120px;      
+      gap: 40px; /* Spazio uniforme tra un gioco e l'altro */
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Singolo blocco Gioco */
+    .game-item {
+      display: flex;
+      flex-direction: column; /* Mette immagine sopra e testo sotto */
+      align-items: center;    /* Centra perfettamente sull'asse X */
+      width: 120px;
+      position: relative;
+      transition: transform 0.2s; /* Animazione fluida */
+    }
+
+    .game-item:hover {
+      transform: scale(1.1); /* Si ingrandisce leggermente al passaggio del mouse */
     }
 
     .game-item img {
       width: 80px;
       height: auto;
       z-index: 10;
+      border-radius: 10px; /* Opzionale: arrotonda un po' i bordi del logo */
     }
 
     .game-name {
-      margin-top: 5px;       
-      font-size: 15px;
+      margin-top: 10px;
+      font-size: 14px;
       color: white;
       text-align: center;
       cursor: default;
       z-index: 50;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5); /* Rende il testo più leggibile */
     }
 
-    
+    /* Il bottone invisibile che copre l'intera area del gioco */
     .play-button {
       position: absolute;
       top: 0;
@@ -47,34 +68,40 @@
       z-index: 1000;
     }
 
+    /* Footer per il copyright */
     .license {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
       bottom: 15px;
-      color: #ffffff;
-      font-size: 15px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+      white-space: nowrap;
     }
   </style>
 </head>
 <body>
 
-  <div class="game-item" style="left: 20px;">
-    <img src="./assets/ball-clicker/logo.png" alt="Ball Clicker">
-    <div class="game-name">ball clicker</div>
-    <button class="play-button" onclick="location.href='/ball-clicker'"></button>
-  </div>
+  <div class="games-container">
 
-  <div class="game-item" style="left: 150px;">
-    <img src="./assets/logo-dvd/logo.png" alt="DVD logo">
-    <div class="game-name">DVD screensaver</div>
-    <button class="play-button" onclick="location.href='/logo-dvd'"></button>
-  </div>
+    <div class="game-item">
+      <img src="./assets/ball-clicker/logo.png" alt="Ball Clicker">
+      <div class="game-name">ball clicker</div>
+      <button class="play-button" onclick="window.location.href='/ball-clicker'"></button>
+    </div>
 
-  <div class="game-item" style="left: 280px;">
-    <img src="./assets/tower-ability/logo.png" alt="Tower Ability">
-    <div class="game-name">tower ability</div>
-    <button class="play-button" onclick="location.href='/tower-ability'"></button>
+    <div class="game-item">
+      <img src="./assets/logo-dvd/logo.png" alt="DVD logo">
+      <div class="game-name">DVD screensaver</div>
+      <button class="play-button" onclick="window.location.href='/logo-dvd'"></button>
+    </div>
+
+    <div class="game-item">
+      <img src="./assets/tower-ability/logo.png" alt="Tower Ability">
+      <div class="game-name">tower ability</div>
+      <button class="play-button" onclick="window.location.href='/tower-ability'"></button>
+    </div>
+
   </div>
 
   <div class="license">Copyright © 2025-2026 cribest7890</div>
