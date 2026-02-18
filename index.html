@@ -11,38 +11,37 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
       display: flex;
-      justify-content: center; /* Centra il gruppo di giochi nella pagina */
+      justify-content: center; 
       align-items: flex-start;
       padding-top: 50px;
     }
 
-    /* Contenitore principale per tutti i giochi */
+
     .games-container {
       display: flex;
-      gap: 40px; /* Spazio uniforme tra un gioco e l'altro */
+      gap: 40px; 
       flex-wrap: wrap;
       justify-content: center;
     }
 
-    /* Singolo blocco Gioco */
     .game-item {
       display: flex;
-      flex-direction: column; /* Mette immagine sopra e testo sotto */
-      align-items: center;    /* Centra perfettamente sull'asse X */
+      flex-direction: column;
+      align-items: center;   
       width: 120px;
       position: relative;
-      transition: transform 0.2s; /* Animazione fluida */
+      transition: transform 0.2s;
     }
 
     .game-item:hover {
-      transform: scale(1.1); /* Si ingrandisce leggermente al passaggio del mouse */
+      transform: scale(1.1);
     }
 
     .game-item img {
       width: 80px;
       height: auto;
       z-index: 10;
-      border-radius: 10px; /* Opzionale: arrotonda un po' i bordi del logo */
+      border-radius: 10px;
     }
 
     .game-name {
@@ -52,10 +51,9 @@
       text-align: center;
       cursor: default;
       z-index: 50;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.5); /* Rende il testo più leggibile */
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
     }
 
-    /* Il bottone invisibile che copre l'intera area del gioco */
     .play-button {
       position: absolute;
       top: 0;
@@ -68,7 +66,6 @@
       z-index: 1000;
     }
 
-    /* Footer per il copyright */
     .license {
       position: absolute;
       left: 50%;
