@@ -1,1 +1,26 @@
+name: Deploy to Neocities
 
+on:
+  push:
+    branches: 
+      - main  # Cambia in 'master' se usi quel branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Se hai bisogno di buildare il sito (es. con npm)
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '18'
+      # - run: npm install && npm run build
+
+      - name: Deploy to Neocities
+        uses: bcomnes/deploy-to-neocities@v3
+        with:
+          api_token: ${{ secrets.NEOCITIES_API_TOKEN }}
+          dist_dir: public    # Cartella da cui caricare i file
+          cleanup: true       # Elimina file vecchi non più presenti   
