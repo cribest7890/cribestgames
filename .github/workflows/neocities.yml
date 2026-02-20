@@ -22,5 +22,6 @@ jobs:
         uses: bcomnes/deploy-to-neocities@v3
         with:
           api_token: ${{ secrets.NEOCITIES_API_TOKEN }}
-          dist_dir: .    # Cartella da cui caricare i file
-          cleanup: true       # Elimina file vecchi non più presenti   
+          dist_dir: .
+          cleanup: true
+          preview_before_deploy: true    
