@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcolatrice Scolastica</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: #2a2a2f;
+    --accent: #c8f135;
+    --accent2: #7b61ff;
+    --text: #e8e8ec;
+    --muted: #6b6b75;
+    --error: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 48px 16px 80px;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .wrapper { position: relative; z-index: 1; width: 100%; max-width: 640px; }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--text);
+  }
+
+  header h1 span { color: var(--accent); }
+
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: var(--accent2);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* Mode tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 9px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+  }
+
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* Main input area */
+  .input-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .input-area:focus-within { border-color: var(--accent); }
+
+  .input-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .expr-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    color: var(--text);
+    caret-color: var(--accent);
+  }
+
+  .expr-input::placeholder { color: var(--muted); font-style: italic; }
+
+  .calc-btn {
+    background: var(--accent);
+    color: #0d0d0f;
+    border: none;
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .calc-btn:hover { transform: scale(1.07); }
+  .calc-btn:active { transform: scale(0.96); }
+
+  /* Result */
+  .result-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  .result-box.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-box.error { border-color: var(--error); }
+  .result-box.success { border-color: var(--accent); }
+
+  .result-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .result-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  .result-box.error .result-text { color: var(--error); font-size: 14px; font-weight: 400; }
+
+  /* Quick reference */
+  .ref-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .ref-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ref-header span:first-child {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ref-toggle {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+
+  .ref-toggle.open { transform: rotate(180deg); }
+
+  .ref-body { display: none; padding: 0 20px 16px; }
+  .ref-body.open { display: block; }
+
+  .example-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+
+  .chip:hover {
+    background: var(--accent);
+    color: #0d0d0f;
+    border-color: var(--accent);
+  }
+
+  /* History */
+  .history {
+    margin-top: 24px;
+  }
+
+  .history-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .history-item:hover { border-color: var(--accent2); }
+
+  .history-expr {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .history-res {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    float: right;
+    margin-top: -4px;
+  }
+
+  .clear-btn:hover { border-color: var(--error); color: var(--error); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <h1>Calc<span>_</span>Scuola</h1>
+    <span class="badge">v1.0</span>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-mode="calc" onclick="setMode('calc')">Calcola</button>
+    <button class="tab" data-mode="2x" onclick="setMode('2x')">2x = n</button>
+    <button class="tab" data-mode="classic" onclick="setMode('classic')">a/b = c/x</button>
+    <button class="tab" data-mode="xy" onclick="setMode('xy')">x/y = a/b</button>
+    <button class="tab" data-mode="xyprod" onclick="setMode('xyprod')">x·y = n</button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-label" id="inputLabel">Espressione</div>
+    <div class="input-row">
+      <input class="expr-input" id="exprInput" placeholder="es. (3+4)*2^3" autocomplete="off" spellcheck="false">
+      <button class="calc-btn" onclick="calculate()">＝</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-box" id="resultBox">
+    <span class="result-icon" id="resultIcon"></span>
+    <span class="result-text" id="resultText"></span>
+  </div>
+
+  <!-- Quick examples -->
+  <div class="ref-section">
+    <div class="ref-header" onclick="toggleRef()">
+      <span>Esempi rapidi</span>
+      <span class="ref-toggle" id="refToggle">▼</span>
+    </div>
+    <div class="ref-body" id="refBody">
+      <div class="example-chips" id="exampleChips"></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history" id="historySection" style="display:none">
+    <div class="history-title" style="display:flex;align-items:center;justify-content:space-between;">
+      Cronologia
+      <button class="clear-btn" onclick="clearHistory()">Cancella</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<script>
+// ─── Math engine (ported from Python) ───────────────────────────
+
+function calcEngine(expr) {
+  expr = expr.replace(/\[/g,'(').replace(/\]/g,')');
+  expr = expr.replace(/\{/g,'(').replace(/\}/g,')');
+  expr = expr.replace(/\^/g,'**');
+  // Safe eval using Function with no globals
+  try {
+    const result = Function('"use strict"; return (' + expr + ')')();
+    if (typeof result !== 'number' || !isFinite(result)) throw new Error('Risultato non valido');
+    return Number.isInteger(result) ? result : parseFloat(result.toFixed(10));
+  } catch(e) {
+    throw new Error('Espressione non valida');
+  }
+}
+
+function proporzione2x(line) {
+  line = line.replace(/\s/g,'');
+  const m = line.match(/^(\d*)x=(\d+\.?\d*)$/);
+  if (!m) throw new Error('Formato: 2x = 10');
+  const coeff = m[1] ? parseInt(m[1]) : 1;
+  const x = parseFloat(m[2]) / coeff;
+  return `x = ${fmtNum(x)}`;
+}
+
+function proporzioneClassica(line) {
+  line = line.replace(/\s/g,'');
+  const m = line.match(/^(\d+\.?\d*)\/(\d+\.?\d*)=(\d+\.?\d*)\/([a-zA-Z])$/);
+  if (!m) throw new Error('Formato: 2/4 = 5/x');
+  const [,a,b,c,xv] = m;
+  const x = parseFloat(b)*parseFloat(c)/parseFloat(a);
+  return `${xv} = ${fmtNum(x)}`;
+}
+
+function proporzioneXY(line) {
+  line = line.replace(/\s/g,'');
+  const [prop, known] = line.split(',');
+  const m = prop.match(/^x\/y=(\d+\.?\d*)\/(\d+\.?\d*)$/);
+  if (!m || !known) throw new Error('Formato: x/y=3/4, y=8');
+  const [,a,b] = m;
+  const [vr, vl] = known.split('=');
+  const val = parseFloat(vl);
+  if (vr === 'y') return `x = ${fmtNum(val*parseFloat(a)/parseFloat(b))}`;
+  if (vr === 'x') return `y = ${fmtNum(val*parseFloat(b)/parseFloat(a))}`;
+  throw new Error('Variabile deve essere x o y');
+}
+
+function proporzioneXYProd(line) {
+  line = line.replace(/\s/g,'');
+  const m = line.match(/^x\/y=(\d+\.?\d*)\/(\d+\.?\d*),xy=(\d+\.?\d*)$/);
+  if (!m) throw new Error('Formato: x/y=27/21, xy=63');
+  const [,a,b,prod] = m.map(parseFloat);
+  const y = Math.sqrt(prod * b / a);
+  const x = (a/b)*y;
+  return `x = ${fmtNum(x)}, y = ${fmtNum(y)}`;
+}
+
+function fmtNum(n) {
+  if (Number.isInteger(n)) return n;
+  return parseFloat(n.toFixed(6));
+}
+
+// ─── Modes ───────────────────────────────────────────────────────
+
+const modes = {
+  calc:    { label: 'Espressione',    placeholder: 'es. (3+4)*2^3 o 15%4',       examples: ['(3+4)*2^3','15%4','2^10','(100-30)/2','3*[4+2]'] },
+  '2x':   { label: 'Equazione (2x)', placeholder: 'es. 2x = 10',                examples: ['2x=10','5x=25','3x=9','x=7'] },
+  classic:{ label: 'Proporzione',     placeholder: 'es. 2/4 = 5/x',              examples: ['2/4=5/x','3/6=9/x','10/2=5/x'] },
+  xy:     { label: 'Proporzione x/y', placeholder: 'es. x/y=3/4, y=8',          examples: ['x/y=3/4,y=8','x/y=3/4,x=6','x/y=27/21,y=7'] },
+  xyprod: { label: 'x/y con prodotto','placeholder': 'es. x/y=27/21, xy=63',     examples: ['x/y=27/21,xy=63','x/y=3/4,xy=48'] },
+};
+
+let currentMode = 'calc';
+let history = JSON.parse(localStorage.getItem('calc_history') || '[]');
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  const cfg = modes[mode];
+  document.getElementById('inputLabel').textContent = cfg.label;
+  const inp = document.getElementById('exprInput');
+  inp.placeholder = cfg.placeholder;
+  inp.value = '';
+  inp.focus();
+  hideResult();
+  renderChips();
+}
+
+function renderChips() {
+  const cfg = modes[currentMode];
+  document.getElementById('exampleChips').innerHTML = cfg.examples.map(
+    e => `<span class="chip" onclick="useExample('${e}')">${e}</span>`
+  ).join('');
+}
+
+function useExample(ex) {
+  document.getElementById('exprInput').value = ex;
+  document.getElementById('exprInput').focus();
+  calculate();
+}
+
+function toggleRef() {
+  const body = document.getElementById('refBody');
+  const toggle = document.getElementById('refToggle');
+  const open = body.classList.toggle('open');
+  toggle.classList.toggle('open', open);
+}
+
+// ─── Calculate ───────────────────────────────────────────────────
+
+function calculate() {
+  const input = document.getElementById('exprInput').value.trim();
+  if (!input) return;
+  try {
+    let result;
+    const norm = input.replace(/\s/g,'');
+
+    // Auto-detect proportion patterns regardless of mode
+    if (/^\d*x=\d+\.?\d*$/.test(norm)) {
+      result = proporzione2x(input);
+    } else if (/^x\/y=\d+\.?\d*\/\d+\.?\d*,xy=\d+\.?\d*$/.test(norm)) {
+      result = proporzioneXYProd(input);
+    } else if (/^x\/y=\d+\.?\d*\/\d+\.?\d*,[xy]=\d+\.?\d*$/.test(norm)) {
+      result = proporzioneXY(input);
+    } else if (/^\d+\.?\d*\/\d+\.?\d*=\d+\.?\d*\/[a-zA-Z]$/.test(norm)) {
+      result = proporzioneClassica(input);
+    } else if (currentMode === 'calc') {
+      result = String(calcEngine(input));
+    } else if (currentMode === '2x') {
+      result = proporzione2x(input);
+    } else if (currentMode === 'classic') {
+      result = proporzioneClassica(input);
+    } else if (currentMode === 'xy') {
+      result = proporzioneXY(input);
+    } else if (currentMode === 'xyprod') {
+      result = proporzioneXYProd(input);
+    }
+
+    showResult(result, false);
+    addHistory(input, result);
+  } catch(e) {
+    showResult(e.message, true);
+  }
+}
+
+function showResult(text, isError) {
+  const box = document.getElementById('resultBox');
+  const txt = document.getElementById('resultText');
+  const icon = document.getElementById('resultIcon');
+  box.className = 'result-box show ' + (isError ? 'error' : 'success');
+  txt.textContent = text;
+  icon.textContent = isError ? '✗' : '=';
+}
+
+function hideResult() {
+  document.getElementById('resultBox').className = 'result-box';
+}
+
+// ─── History ─────────────────────────────────────────────────────
+
+function addHistory(expr, result) {
+  history.unshift({ expr, result });
+  if (history.length > 20) history.pop();
+  localStorage.setItem('calc_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const section = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  if (history.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = history.slice(0,8).map(h =>
+    `<div class="history-item" onclick="reuseHistory('${h.expr.replace(/'/g,"\\'")}')">
+      <span class="history-expr">${h.expr}</span>
+      <span class="history-res">${h.result}</span>
+    </div>`
+  ).join('');
+}
+
+function reuseHistory(expr) {
+  document.getElementById('exprInput').value = expr;
+  calculate();
+}
+
+function clearHistory() {
+  history = [];
+  localStorage.removeItem('calc_history');
+  renderHistory();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+
+document.getElementById('exprInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') calculate();
+});
+
+renderChips();
+renderHistory();
+</script>
+</body>
+</html>
