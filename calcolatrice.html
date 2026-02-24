@@ -32,7 +32,6 @@
     padding: 48px 16px 80px;
   }
 
-  /* Noise overlay */
   body::before {
     content: '';
     position: fixed;
@@ -61,52 +60,6 @@
   }
 
   header h1 span { color: var(--accent); }
-
-  .badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    background: var(--accent2);
-    color: white;
-    padding: 3px 8px;
-    border-radius: 4px;
-  }
-
-  /* Mode tabs */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 20px;
-    background: var(--surface);
-    padding: 4px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-  }
-
-  .tab {
-    flex: 1;
-    padding: 9px 8px;
-    background: transparent;
-    border: none;
-    border-radius: 7px;
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.18s;
-    text-align: center;
-  }
-
-  .tab.active {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .tab:hover:not(.active) { color: var(--text); }
 
   /* Main input area */
   .input-area {
@@ -293,8 +246,7 @@
     border-radius: 8px;
     margin-bottom: 6px;
     cursor: pointer;
-    transition: border-color 0.15s;
-    animation: slideIn 0.2s ease;
+    animation: slideIn 0.15s ease;
   }
 
   @keyframes slideIn {
@@ -337,24 +289,14 @@
 <body>
 <div class="wrapper">
   <header>
-    <h1>Calc<span>_</span>Scuola</h1>
-    <span class="badge">v1.0</span>
+    <h1>Calco<span>_</span>latrice</h1>
   </header>
-
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" data-mode="calc" onclick="setMode('calc')">Calcola</button>
-    <button class="tab" data-mode="2x" onclick="setMode('2x')">2x = n</button>
-    <button class="tab" data-mode="classic" onclick="setMode('classic')">a/b = c/x</button>
-    <button class="tab" data-mode="xy" onclick="setMode('xy')">x/y = a/b</button>
-    <button class="tab" data-mode="xyprod" onclick="setMode('xyprod')">x·y = n</button>
-  </div>
 
   <!-- Input -->
   <div class="input-area">
     <div class="input-label" id="inputLabel">Espressione</div>
     <div class="input-row">
-      <input class="expr-input" id="exprInput" placeholder="es. (3+4)*2^3" autocomplete="off" spellcheck="false">
+      <input class="expr-input" id="exprInput" placeholder="es. (3+4)*2^3  oppure  2:4=5:x" autocomplete="off" spellcheck="false">
       <button class="calc-btn" onclick="calculate()">＝</button>
     </div>
   </div>
@@ -387,98 +329,149 @@
 </div>
 
 <script>
-// ─── Math engine (ported from Python) ───────────────────────────
+// ─── Fraction support ─────────────────────────────────────────────
+
+// Parse a string like "3/4" or "7" into a decimal number
+function parseFraction(s) {
+  s = s.trim();
+  const m = s.match(/^(-?\d+)\/(\d+)$/);
+  if (m) {
+    const num = parseInt(m[1]);
+    const den = parseInt(m[2]);
+    if (den === 0) throw new Error('Divisione per zero');
+    return num / den;
+  }
+  const n = parseFloat(s);
+  if (isNaN(n)) throw new Error('Numero non valido: ' + s);
+  return n;
+}
+
+// ─── Math engine ──────────────────────────────────────────────────
 
 function calcEngine(expr) {
+  // Replace colon division with slash for standard calc (but only when not proportion)
   expr = expr.replace(/\[/g,'(').replace(/\]/g,')');
   expr = expr.replace(/\{/g,'(').replace(/\}/g,')');
   expr = expr.replace(/\^/g,'**');
-  // Safe eval using Function with no globals
+  // Replace colons used as division with slash
+  expr = expr.replace(/:/g,'/');
+
+  // Support fraction literals: replace "a/b" patterns (not already inside exponent) with their decimal
+  // We let JS handle a/b natively since / is division in JS — this works!
   try {
     const result = Function('"use strict"; return (' + expr + ')')();
     if (typeof result !== 'number' || !isFinite(result)) throw new Error('Risultato non valido');
-    return Number.isInteger(result) ? result : parseFloat(result.toFixed(10));
+    // Try to display as fraction if result is "nice"
+    const frac = toFraction(result);
+    if (frac) return frac;
+    return Number.isInteger(result) ? String(result) : String(parseFloat(result.toFixed(10)));
   } catch(e) {
     throw new Error('Espressione non valida');
   }
 }
 
+// Convert a decimal to a fraction string if it's a simple one
+function toFraction(x) {
+  if (Number.isInteger(x)) return null; // return null so caller uses integer form
+  for (let den = 2; den <= 100; den++) {
+    const num = Math.round(x * den);
+    if (Math.abs(num / den - x) < 1e-9) {
+      const g = gcd(Math.abs(num), den);
+      const rn = num / g, rd = den / g;
+      if (rd === 1) return null;
+      if (rd <= 100) return `${rn}/${rd}`;
+    }
+  }
+  return null;
+}
+
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+function fmtNum(n) {
+  if (Number.isInteger(n)) return String(n);
+  const frac = toFraction(n);
+  if (frac) return frac;
+  return String(parseFloat(n.toFixed(6)));
+}
+
+// ─── Proportion solvers ──────────────────────────────────────────
+// Accept : as separator (also / for legacy), and fraction values like 1/2
+
+// Number token: integer, decimal, or fraction like 1/2
+const NUM = '(\\d+(?:\\.\\d+)?(?:\\/\\d+)?)';
+const NUMRE = new RegExp(NUM);
+
+function parseNum(s) { return parseFraction(s); }
+
 function proporzione2x(line) {
   line = line.replace(/\s/g,'');
-  const m = line.match(/^(\d*)x=(\d+\.?\d*)$/);
+  // Accepts: 2x=10 or 2x=1/2
+  const m = line.match(new RegExp(`^(\\d*)x=${NUM}$`));
   if (!m) throw new Error('Formato: 2x = 10');
   const coeff = m[1] ? parseInt(m[1]) : 1;
-  const x = parseFloat(m[2]) / coeff;
+  const x = parseNum(m[2]) / coeff;
   return `x = ${fmtNum(x)}`;
 }
 
 function proporzioneClassica(line) {
+  // Format: a:b = c:x  (or a/b = c/x, legacy)
   line = line.replace(/\s/g,'');
-  const m = line.match(/^(\d+\.?\d*)\/(\d+\.?\d*)=(\d+\.?\d*)\/([a-zA-Z])$/);
-  if (!m) throw new Error('Formato: 2/4 = 5/x');
+  // Normalize separators: allow : or /
+  // Pattern: NUM (: or /) NUM = NUM (: or /) letter
+  const m = line.match(new RegExp(`^${NUM}[:/]${NUM}=${NUM}[:/]([a-zA-Z])$`));
+  if (!m) throw new Error('Formato: 2:4 = 5:x');
   const [,a,b,c,xv] = m;
-  const x = parseFloat(b)*parseFloat(c)/parseFloat(a);
+  const x = parseNum(b)*parseNum(c)/parseNum(a);
   return `${xv} = ${fmtNum(x)}`;
 }
 
 function proporzioneXY(line) {
   line = line.replace(/\s/g,'');
   const [prop, known] = line.split(',');
-  const m = prop.match(/^x\/y=(\d+\.?\d*)\/(\d+\.?\d*)$/);
-  if (!m || !known) throw new Error('Formato: x/y=3/4, y=8');
+  if (!prop || !known) throw new Error('Formato: x:y=3:4, y=8');
+  // x:y = a:b or x/y = a/b
+  const m = prop.match(new RegExp(`^x[:/]y=${NUM}[:/]${NUM}$`));
+  if (!m) throw new Error('Formato: x:y=3:4, y=8');
   const [,a,b] = m;
   const [vr, vl] = known.split('=');
-  const val = parseFloat(vl);
-  if (vr === 'y') return `x = ${fmtNum(val*parseFloat(a)/parseFloat(b))}`;
-  if (vr === 'x') return `y = ${fmtNum(val*parseFloat(b)/parseFloat(a))}`;
+  const val = parseNum(vl);
+  if (vr === 'y') return `x = ${fmtNum(val*parseNum(a)/parseNum(b))}`;
+  if (vr === 'x') return `y = ${fmtNum(val*parseNum(b)/parseNum(a))}`;
   throw new Error('Variabile deve essere x o y');
 }
 
 function proporzioneXYProd(line) {
   line = line.replace(/\s/g,'');
-  const m = line.match(/^x\/y=(\d+\.?\d*)\/(\d+\.?\d*),xy=(\d+\.?\d*)$/);
-  if (!m) throw new Error('Formato: x/y=27/21, xy=63');
-  const [,a,b,prod] = m.map(parseFloat);
+  // x:y=27:21, xy=63
+  const m = line.match(new RegExp(`^x[:/]y=${NUM}[:/]${NUM},[xX][yY]=${NUM}$`));
+  if (!m) throw new Error('Formato: x:y=27:21, xy=63');
+  const [,a,b,prod] = m.map((v,i) => i===0 ? v : parseNum(v));
   const y = Math.sqrt(prod * b / a);
   const x = (a/b)*y;
   return `x = ${fmtNum(x)}, y = ${fmtNum(y)}`;
 }
 
-function fmtNum(n) {
-  if (Number.isInteger(n)) return n;
-  return parseFloat(n.toFixed(6));
-}
+// ─── Auto-detect & calculate ──────────────────────────────────────
 
-// ─── Modes ───────────────────────────────────────────────────────
+const examples = [
+  '(3+4)*2^3',
+  '1/2 + 1/3',
+  '3/4 * 2',
+  '15%4',
+  '2^10',
+  '2x = 10',
+  '3x = 1/2',
+  '2:4 = 5:x',
+  '1/2 : 1/4 = x : 3',
+  'x:y=3:4, y=8',
+  'x:y=27:21, xy=63',
+];
 
-const modes = {
-  calc:    { label: 'Espressione',    placeholder: 'es. (3+4)*2^3 o 15%4',       examples: ['(3+4)*2^3','15%4','2^10','(100-30)/2','3*[4+2]'] },
-  '2x':   { label: 'Equazione (2x)', placeholder: 'es. 2x = 10',                examples: ['2x=10','5x=25','3x=9','x=7'] },
-  classic:{ label: 'Proporzione',     placeholder: 'es. 2/4 = 5/x',              examples: ['2/4=5/x','3/6=9/x','10/2=5/x'] },
-  xy:     { label: 'Proporzione x/y', placeholder: 'es. x/y=3/4, y=8',          examples: ['x/y=3/4,y=8','x/y=3/4,x=6','x/y=27/21,y=7'] },
-  xyprod: { label: 'x/y con prodotto','placeholder': 'es. x/y=27/21, xy=63',     examples: ['x/y=27/21,xy=63','x/y=3/4,xy=48'] },
-};
-
-let currentMode = 'calc';
 let history = JSON.parse(localStorage.getItem('calc_history') || '[]');
 
-function setMode(mode) {
-  currentMode = mode;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
-  const cfg = modes[mode];
-  document.getElementById('inputLabel').textContent = cfg.label;
-  const inp = document.getElementById('exprInput');
-  inp.placeholder = cfg.placeholder;
-  inp.value = '';
-  inp.focus();
-  hideResult();
-  renderChips();
-}
-
 function renderChips() {
-  const cfg = modes[currentMode];
-  document.getElementById('exampleChips').innerHTML = cfg.examples.map(
-    e => `<span class="chip" onclick="useExample('${e}')">${e}</span>`
+  document.getElementById('exampleChips').innerHTML = examples.map(
+    e => `<span class="chip" onclick="useExample('${e.replace(/'/g,"\\'")}')">${e}</span>`
   ).join('');
 }
 
@@ -495,8 +488,6 @@ function toggleRef() {
   toggle.classList.toggle('open', open);
 }
 
-// ─── Calculate ───────────────────────────────────────────────────
-
 function calculate() {
   const input = document.getElementById('exprInput').value.trim();
   if (!input) return;
@@ -504,25 +495,19 @@ function calculate() {
     let result;
     const norm = input.replace(/\s/g,'');
 
-    // Auto-detect proportion patterns regardless of mode
-    if (/^\d*x=\d+\.?\d*$/.test(norm)) {
+    // Build regex patterns that accept : or / as proportion separator, and fraction numerals
+    const NP = '\\d+(?:\\.\\d+)?(?:\\/\\d+)?'; // number pattern (incl. fractions)
+
+    if (new RegExp(`^\\d*x=${NP}$`).test(norm)) {
       result = proporzione2x(input);
-    } else if (/^x\/y=\d+\.?\d*\/\d+\.?\d*,xy=\d+\.?\d*$/.test(norm)) {
+    } else if (new RegExp(`^x[:/]y=${NP}[:/]${NP},[xX][yY]=${NP}$`).test(norm)) {
       result = proporzioneXYProd(input);
-    } else if (/^x\/y=\d+\.?\d*\/\d+\.?\d*,[xy]=\d+\.?\d*$/.test(norm)) {
+    } else if (new RegExp(`^x[:/]y=${NP}[:/]${NP},[xy]=${NP}$`).test(norm)) {
       result = proporzioneXY(input);
-    } else if (/^\d+\.?\d*\/\d+\.?\d*=\d+\.?\d*\/[a-zA-Z]$/.test(norm)) {
+    } else if (new RegExp(`^${NP}[:/]${NP}=${NP}[:/][a-zA-Z]$`).test(norm)) {
       result = proporzioneClassica(input);
-    } else if (currentMode === 'calc') {
-      result = String(calcEngine(input));
-    } else if (currentMode === '2x') {
-      result = proporzione2x(input);
-    } else if (currentMode === 'classic') {
-      result = proporzioneClassica(input);
-    } else if (currentMode === 'xy') {
-      result = proporzioneXY(input);
-    } else if (currentMode === 'xyprod') {
-      result = proporzioneXYProd(input);
+    } else {
+      result = calcEngine(input);
     }
 
     showResult(result, false);
@@ -545,7 +530,7 @@ function hideResult() {
   document.getElementById('resultBox').className = 'result-box';
 }
 
-// ─── History ─────────────────────────────────────────────────────
+// ─── History ──────────────────────────────────────────────────────
 
 function addHistory(expr, result) {
   history.unshift({ expr, result });
