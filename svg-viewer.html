@@ -327,7 +327,9 @@
 
   function sanitizeSVG(svgText) {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
+    const doc = parser.parseFromString(<input type="file" id="fileInput"
+       accept=".svg,application/xml,text/xml"
+       capture>);
     doc.querySelectorAll("script, foreignObject, use").forEach(el => el.remove());
     doc.querySelectorAll("*").forEach(el => {
       [...el.attributes].forEach(attr => {
