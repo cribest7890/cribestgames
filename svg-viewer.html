@@ -177,6 +177,28 @@ border: 1px solid var(--border);
 }
 .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
 
+/* ── TOGGLE SFONDO ── */
+.bg-toggle {
+display: flex;
+align-items: center;
+gap: 4px;
+margin-right: 4px;
+}
+.bg-btn {
+width: 22px; height: 22px;
+border-radius: 5px;
+border: 1.5px solid var(--border);
+cursor: pointer;
+transition: all 0.2s;
+font-size: 0.65rem;
+display: flex; align-items: center; justify-content: center;
+font-weight: 700;
+}
+.bg-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,110,247,0.3); }
+.bg-btn-white { background: #fff; color: #333; }
+.bg-btn-checker { background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 8px 8px; color: #333; }
+.bg-btn-dark { background: #1a1a2e; color: #fff; }
+
 #svgContainer {
 padding: 16px;
 display: flex;
@@ -185,14 +207,33 @@ justify-content: center;
 min-height: 160px;
 max-height: 340px;
 overflow: auto;
+/* DEFAULT: sfondo bianco → SVG neri sempre visibili */
+background: #ffffff;
+transition: background 0.25s ease;
+}
+
+/* Classi sfondo alternative */
+#svgContainer.bg-checker {
 background-image:
-linear-gradient(45deg, #151520 25%, transparent 25%),
-linear-gradient(-45deg, #151520 25%, transparent 25%),
-linear-gradient(45deg, transparent 75%, #151520 75%),
-linear-gradient(-45deg, transparent 75%, #151520 75%);
+  linear-gradient(45deg, #cccccc 25%, transparent 25%),
+  linear-gradient(-45deg, #cccccc 25%, transparent 25%),
+  linear-gradient(45deg, transparent 75%, #cccccc 75%),
+  linear-gradient(-45deg, transparent 75%, #cccccc 75%);
 background-size: 20px 20px;
 background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+background-color: #fff;
 }
+#svgContainer.bg-dark {
+background-image:
+  linear-gradient(45deg, #151520 25%, transparent 25%),
+  linear-gradient(-45deg, #151520 25%, transparent 25%),
+  linear-gradient(45deg, transparent 75%, #151520 75%),
+  linear-gradient(-45deg, transparent 75%, #151520 75%);
+background-size: 20px 20px;
+background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+background-color: #0d0d1a;
+}
+
 #svgContainer svg {
 max-width: 100%;
 max-height: 310px;
@@ -247,22 +288,35 @@ animation: pulse 2s infinite;
 </style>
 
 </head>  
-<body>  <div class="blob blob1"></div>  
-<div class="blob blob2"></div>  <div class="card">  
+<body>  
+<div class="blob blob1"></div>  
+<div class="blob blob2"></div>
+
+<div class="card">  
   <div class="logo">  
     <div class="logo-icon">⬡</div>  
     <div>  
       <div class="logo-text">SVG Viewer</div>  
       <div class="logo-sub">Secure · Client-side</div>  
     </div>  
-  </div>    <div id="dropZone">  
+  </div>
+
+  <div id="dropZone">  
     <span class="drop-icon">🗂️</span>  
     <div class="drop-title">Trascina il tuo file SVG</div>  
     <div class="drop-sub">oppure <span>clicca per selezionare</span></div>  
-  </div>    <div id="previewWrap">  
+  </div>
+
+  <div id="previewWrap">  
     <div class="preview-toolbar">  
       <span class="preview-filename" id="previewName">file.svg</span>  
-      <div class="preview-actions">  
+      <div class="preview-actions">
+        <!-- Toggle sfondo -->
+        <div class="bg-toggle" title="Cambia sfondo">
+          <button class="bg-btn bg-btn-white active" onclick="setBg('white', this)" title="Sfondo bianco">W</button>
+          <button class="bg-btn bg-btn-checker" onclick="setBg('checker', this)" title="Scacchiera">✦</button>
+          <button class="bg-btn bg-btn-dark" onclick="setBg('dark', this)" title="Sfondo scuro">D</button>
+        </div>
         <button class="btn btn-ghost" onclick="resetViewer()">✕</button>  
         <button class="btn btn-primary" onclick="openInTab()">↗ Apri</button>  
       </div>  
@@ -276,7 +330,13 @@ animation: pulse 2s infinite;
       <button class="zoom-btn" title="Reset" onclick="resetZoom()">⊡</button>  
     </div>  
   </div>  
-</div>  <footer>100% client-side – nessun dato inviato</footer> <input type="file" id="fileInput" accept=".svg,.xml,image/svg+xml,text/xml,application/xml">  <script>  
+</div>
+
+<footer>100% client-side – nessun dato inviato</footer>
+
+<input type="file" id="fileInput" accept=".svg,.xml,image/svg+xml,text/xml,application/xml">
+
+<script>  
   const dropZone = document.getElementById("dropZone");  
   const fileInput = document.getElementById("fileInput");  
   const previewWrap = document.getElementById("previewWrap");  
@@ -298,13 +358,10 @@ animation: pulse 2s infinite;
   });  
     
   fileInput.addEventListener("change", e => {  
-    if (e.target.files.length > 0) {  
-      handleFile(e.target.files[0]);  
-    }  
+    if (e.target.files.length > 0) handleFile(e.target.files[0]);
   });  
   
   function handleFile(file) {  
-    // CORRETTO: rimosso il refuso "file/.svg"  
     if (!file || !file.name.toLowerCase().endsWith(".svg")) {  
       shake(dropZone);  
       return;  
@@ -340,7 +397,11 @@ animation: pulse 2s infinite;
         
       svg.removeAttribute("width");  
       svg.removeAttribute("height");  
-      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");  
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+      // FIX DARK MODE: disabilita color-scheme sul SVG per evitare che
+      // il browser applichi inversioni automatiche di colore
+      svg.style.colorScheme = "light";
     }  
     return new XMLSerializer().serializeToString(doc);  
   }  
@@ -358,7 +419,8 @@ animation: pulse 2s infinite;
   function applyScale(svg) {  
     svg.style.transform = `scale(${scale})`;  
     svg.style.transformOrigin = "center center";  
-    svg.style.transition = "transform 0.2s ease";  
+    svg.style.transition = "transform 0.2s ease";
+    svg.style.colorScheme = "light"; // mantieni dopo resize
   }  
   
   function zoom(delta) {  
@@ -382,29 +444,50 @@ animation: pulse 2s infinite;
   function resetViewer() {  
     previewWrap.classList.remove("visible");  
     svgContainer.innerHTML = "";  
+    svgContainer.className = ""; // reset classi sfondo
+    svgContainer.style.background = "#ffffff";
     fileInput.value = "";  
-    currentSVG = "";  
+    currentSVG = "";
+    // reset toggle buttons
+    document.querySelectorAll(".bg-btn").forEach(b => b.classList.remove("active"));
+    document.querySelector(".bg-btn-white").classList.add("active");
   }  
   
   function openInTab() {  
     const w = window.open("", "_blank");  
     if (!w) { alert("Popup bloccato dal browser"); return; }  
     w.document.open();  
+    // Sfondo bianco nella nuova tab per garantire visibilità
     w.document.write(`<!DOCTYPE html><html><head>  
       <meta charset="UTF-8"><title>${currentFile}</title>  
       <style>  
-        body{margin:0;background:#0a0a0f;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;}  
-        svg{max-width:95vw;max-height:95vh;width:auto;height:auto;}  
-      </style></head><body>${currentSVG}</body></html>`);  w.document.close();
+        body{margin:0;background:#ffffff;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;}  
+        svg{max-width:95vw;max-height:95vh;width:auto;height:auto;color-scheme:light;}  
+      </style></head><body>${currentSVG}</body></html>`);
+    w.document.close();
+  }
 
-}
+  // Cambia sfondo del container SVG
+  function setBg(mode, btn) {
+    svgContainer.classList.remove("bg-checker", "bg-dark");
+    svgContainer.style.background = "";
+    if (mode === "white") {
+      svgContainer.style.background = "#ffffff";
+    } else if (mode === "checker") {
+      svgContainer.classList.add("bg-checker");
+    } else if (mode === "dark") {
+      svgContainer.classList.add("bg-dark");
+    }
+    document.querySelectorAll(".bg-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
 
-function shake(el) {
-el.style.animation = "none";
-el.offsetHeight;
-el.style.animation = "shake 0.4s ease";
-}
+  function shake(el) {
+    el.style.animation = "none";
+    el.offsetHeight;
+    el.style.animation = "shake 0.4s ease";
+  }
 </script>
 
 </body>  
-</html>  
+</html>
